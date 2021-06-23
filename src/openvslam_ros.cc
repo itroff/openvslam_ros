@@ -151,7 +151,7 @@ rgbd::rgbd(const std::shared_ptr<openvslam::config>& cfg, const std::string& voc
     : system(cfg, vocab_file_path, mask_img_path),
       color_sf_(node_, "camera/color/image_raw"),
       depth_sf_(node_, "camera/depth/image_raw"),
-      sync_(color_sf_, depth_sf_, 10) {
+      sync_(RGBDSyncPolicy(10), color_sf_, depth_sf_) {
     sync_.registerCallback(&rgbd::callback, this);
 }
 
