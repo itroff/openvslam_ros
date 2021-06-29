@@ -1,0 +1,63 @@
+# Equirectangular model for RICOH THETA S
+
+#==============#
+# Camera Model #
+#==============#
+
+Camera:
+  name: "realsense d435"
+  setup: "stereo"
+  model: "perspective"
+
+  fps: 30.0
+  cols: 1280
+  rows: 720
+
+  fx: 651.6014404296875
+  fy: 637.7088012695312
+  cx: 651.6014404296875
+  cy: 366.57562255859375
+
+# there is no distortion after stereo rectification
+
+  k1: 0.0
+  k2: 0.0
+  p1: 0.0
+  p2: 0.0
+  k3: 0.0
+
+  focal_x_baseline: 95.0
+
+  color_order: "Gray"
+
+StereoRectifier:
+  K_left: [651.6014404296875, 0.0, 637.7088012695312, 0.0, 651.6014404296875, 366.57562255859375, 0.0, 0.0, 1.0]
+  D_left: [0.0, 0.0, 0.0, 0.0, 0.0]
+  R_left: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+  K_right: [651.6014404296875, 0.0, 637.7088012695312, 0.0, 651.6014404296875, 366.57562255859375, 0.0, 0.0, 1.0]
+  D_right: [0.0, 0.0, 0.0, 0.0, 0.0]
+  R_right: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+
+
+#================#
+# ORB Parameters #
+#================#
+
+Feature:
+  max_num_keypoints: 2000
+  scale_factor: 1.2
+  num_levels: 8
+  ini_fast_threshold: 20
+  min_fast_threshold: 7
+  mask_rectangles:
+    - [0.0, 1.0, 0.0, 0.1]
+    - [0.0, 1.0, 0.84, 1.0]
+    - [0.0, 0.2, 0.7, 1.0]
+    - [0.8, 1.0, 0.7, 1.0]
+
+#====================#
+# Mapping Parameters #
+#====================#
+
+Mapping:
+  baseline_dist_thr_ratio: 0.02
