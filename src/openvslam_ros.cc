@@ -92,6 +92,7 @@ void system::publish_pose(const Eigen::Matrix4d& cam_pose_wc) {
     // Send map->odom transform. Set publish_tf to false if not using TF
     if (publish_tf) {
         try {
+            tf_.setUsingDedicatedThread (true);
             auto camera_to_odom = tf_.lookupTransform(
                 camera_link_, odom_frame_, ros::Time::now(),
                 ros::Duration(0.0));
