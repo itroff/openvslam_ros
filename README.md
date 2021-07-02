@@ -23,3 +23,5 @@
 ```docker cp equirectangular.yaml 21412:/openvslam/ros/1/```
 
 ```rosrun openvslam_ros run_slam -v orb_vocab.fbow -c equirectangular.yaml```
+
+```rosrun image_transport republish  raw in:=/usb_cam/image_raw raw out:=/camera/image_raw```

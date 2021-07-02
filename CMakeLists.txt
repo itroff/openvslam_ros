@@ -115,7 +115,12 @@ endif()
 
 find_package(catkin REQUIRED COMPONENTS
         cv_bridge
-        image_transport)
+        image_transport
+        tf2
+        tf2_eigen
+        tf2_ros
+        tf2_msgs
+        tf2_geometry_msgs)
 
 # thread library
 find_package(Threads REQUIRED)
@@ -173,13 +178,19 @@ if(USE_SOCKET_PUBLISHER)
     include_directories(${SIOCLIENT_INCLUDE_DIR} ${PROTOBUF_INCLUDE_DIRS})
 endif()
 
+
 #################################
 # catkin specific configuration #
 #################################
 
 catkin_package(CATKIN_DEPENDS
         cv_bridge
-        image_transport)
+        image_transport
+        tf2
+        tf2_eigen
+        tf2_ros
+        tf2_msgs
+        tf2_geometry_msgs)
 
 #########
 # Build #

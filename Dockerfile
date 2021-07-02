@@ -139,10 +139,11 @@ RUN set -x && \
   apt-get install -y -qq \
     ros-${ROS_DISTRO}-image-transport \
     ros-${ROS_DISTRO}-cv-bridge && \
+ #    ros-${ROS_DISTRO}-tf2 && ros-${ROS_DISTRO}-tf2-ros && ros-${ROS_DISTRO}-tf2-eigen && ros-${ROS_DISTRO}-tf2-msgs && ros-${ROS_DISTRO}-tf2-geometry-msgs && \
   : "remove cache" && \
   apt-get autoremove -y -qq && \
   rm -rf /var/lib/apt/lists/*
-
+RUN apt-get update -y && apt install -y  ros-${ROS_DISTRO}-tf2  ros-${ROS_DISTRO}-tf2-ros  ros-${ROS_DISTRO}-tf2-eigen  ros-${ROS_DISTRO}-tf2-msgs ros-${ROS_DISTRO}-tf2-geometry-msgs
 WORKDIR /openvslam/ros/1
 RUN mkdir /openvslam/ros/1/src
 COPY . /openvslam/ros/1/src/openvslam_ros

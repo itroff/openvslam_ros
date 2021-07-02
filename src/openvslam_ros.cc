@@ -15,7 +15,7 @@ system::system(const std::shared_ptr<openvslam::config>& cfg, const std::string&
 
 void system::publish_pose(const Eigen::Matrix4d& cam_pose_wc) {
     // Extract rotation matrix and translation vector from
-    Eigen::Matrix3d rot = cam_pose_wc.block<3, 3>(0, 0);
+   Eigen::Matrix3d rot = cam_pose_wc.block<3, 3>(0, 0);
     Eigen::Vector3d trans = cam_pose_wc.block<3, 1>(0, 3);
     Eigen::Matrix3d cv_to_ros;
     cv_to_ros << 0, 0, 1,
@@ -25,12 +25,12 @@ void system::publish_pose(const Eigen::Matrix4d& cam_pose_wc) {
     // Transform from CV coordinate system to ROS coordinate system on camera coordinates
     Eigen::Quaterniond quat(cv_to_ros * rot * cv_to_ros.transpose());
     trans = cv_to_ros * trans;
-
+/*
     // Create odometry message and update it with current camera pose
-    nav_msgs::Odometry pose_msg;
+  nav_msgs::Odometry pose_msg;
     pose_msg.header.stamp = ros::Time::now();
     pose_msg.header.frame_id = "map";
-    pose_msg.child_frame_id = "camera_link";
+    pose_msg.child_frame_id = "odom";
     pose_msg.pose.pose.orientation.x = quat.x();
     pose_msg.pose.pose.orientation.y = quat.y();
     pose_msg.pose.pose.orientation.z = quat.z();
@@ -39,6 +39,77 @@ void system::publish_pose(const Eigen::Matrix4d& cam_pose_wc) {
     pose_msg.pose.pose.position.y = trans(1);
     pose_msg.pose.pose.position.z = trans(2);
     pose_pub_.publish(pose_msg);
+    bool publish_tf = true;
+    std::string camera_link_ = "usb_cam";
+    std::string odom_frame_ = "odom";
+    std::string map_frame_ = "map";
+    transform_tolerance_ = 0.5;
+    if(publish_tf){
+            auto camera_to_odom = tf_->lookupTransform(
+                camera_link_, odom_frame_, tf2_ros::fromMsg(builtin_interfaces::msg::Time(stamp)),
+                tf2::durationFromSec(0.0));
+            Eigen::Affine3d camera_to_odom_affine = tf2::transformToEigen(camera_to_odom.transform);
+
+            auto map_to_odom_msg = tf2::eigenToTransform(map_to_camera_affine * camera_to_odom_affine);
+                       auto map_to_odom_msg = tf2::eigenToTransform(map_to_camera_affine * camera_to_odom_affine);
+                        tf2::TimePoint transform_timestamp = tf2_ros::fromMsg(stamp) + tf2::durationFromSec(transform_tolerance_);
+                        map_to_odom_msg.header.stamp = tf2_ros::toMsg(transform_timestamp);
+                        map_to_odom_msg.header.frame_id = map_frame_;
+                        map_to_odom_msg.child_frame_id = odom_frame_;
+                map_to_odom_broadcaster_.sendTransform(map_to_odom_msg);
+    }
+*/
+  //  Eigen::Matrix3d rot(cam_pose_wc.block<3, 3>(0, 0));
+    Eigen::Translation3d trans2(cam_pose_wc.block<3, 1>(0, 3));
+    Eigen::Affine3d map_to_camera_affine(trans2 * rot);
+    Eigen::Matrix3d rot_ros_to_cv_map_frame;
+    rot_ros_to_cv_map_frame << 0, 0, 1,
+        -1, 0, 0,
+        0, -1, 0;
+
+    // Transform map frame from CV coordinate system to ROS coordinate system
+    map_to_camera_affine.prerotate(rot_ros_to_cv_map_frame);
+    bool publish_tf = true;
+    std::string camera_link_ = "usb_cam";
+    std::string odom_frame_ = "odom";
+    std::string map_frame_ = "map";
+    // Create odometry message and update it with current camera pose
+   nav_msgs::Odometry pose_msg;
+    pose_msg.header.stamp = ros::Time::now();
+    pose_msg.header.frame_id = map_frame_;
+    pose_msg.child_frame_id = camera_link_;
+  pose_msg.pose.pose.orientation.x = quat.x();
+    pose_msg.pose.pose.orientation.y = quat.y();
+    pose_msg.pose.pose.orientation.z = quat.z();
+    pose_msg.pose.pose.orientation.w = quat.w();
+    pose_msg.pose.pose.position.x = trans(0);
+    pose_msg.pose.pose.position.y = trans(1);
+    pose_msg.pose.pose.position.z = trans(2);
+   // pose_msg.pose.pose = tf2::toMsg(map_to_camera_affine);
+    pose_pub_.publish(pose_msg);
+
+    transform_tolerance_ = 0.5;
+    // Send map->odom transform. Set publish_tf to false if not using TF
+    if (publish_tf) {
+        try {
+            auto camera_to_odom = tf_.lookupTransform(
+                camera_link_, odom_frame_, ros::Time::now(),
+                ros::Duration(0.0));
+            Eigen::Affine3d camera_to_odom_affine = tf2::transformToEigen(camera_to_odom.transform);
+
+            auto map_to_odom_msg = tf2::eigenToTransform(map_to_camera_affine * camera_to_odom_affine);
+          //  tf2::TimePoint transform_timestamp = tf2_ros::fromMsg(ros::Time::now()) + tf2::durationFromSec(transform_tolerance_);
+            map_to_odom_msg.header.stamp = ros::Time::now();
+    pose_msg.header.frame_id = map_frame_;//tf2_ros::toMsg(transform_timestamp);
+            map_to_odom_msg.header.frame_id = map_frame_;
+            map_to_odom_msg.child_frame_id = odom_frame_;
+            map_to_odom_broadcaster_.sendTransform(map_to_odom_msg);
+        }
+        catch (tf2::TransformException& ex) {
+            //RCLCPP_ERROR(node_->get_logger(), "Transform failed: %s", ex.what());
+        }
+    }
+
 }
 
 mono::mono(const std::shared_ptr<openvslam::config>& cfg, const std::string& vocab_file_path, const std::string& mask_img_path)

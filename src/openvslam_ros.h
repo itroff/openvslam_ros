@@ -11,6 +11,11 @@
 #include <message_filters/sync_policies/approximate_time.h>
 #include <cv_bridge/cv_bridge.h>
 #include <nav_msgs/Odometry.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/buffer_interface.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_eigen/tf2_eigen.h>
 
 #include <opencv2/core/core.hpp>
 
@@ -28,6 +33,9 @@ public:
     cv::Mat mask_;
     std::vector<double> track_times_;
     ros::Publisher pose_pub_;
+    tf2_ros::TransformBroadcaster map_to_odom_broadcaster_;
+     double transform_tolerance_;
+    tf2_ros::Buffer tf_;
 };
 
 class mono : public system {
