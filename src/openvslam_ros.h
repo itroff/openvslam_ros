@@ -36,6 +36,7 @@ public:
     tf2_ros::TransformBroadcaster map_to_odom_broadcaster_;
      double transform_tolerance_;
     tf2_ros::Buffer tf_;
+    tf2_ros::TransformListener tf_listener_;
 };
 
 class mono : public system {

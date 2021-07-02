@@ -6,12 +6,16 @@
 #include <opencv2/imgcodecs.hpp>
 #include <openvslam/publish/map_publisher.h>
 #include <Eigen/Geometry>
+#include <ros/console.h>
 
 namespace openvslam_ros {
 system::system(const std::shared_ptr<openvslam::config>& cfg, const std::string& vocab_file_path, const std::string& mask_img_path)
     : SLAM_(cfg, vocab_file_path), cfg_(cfg), private_nh_("~"), it_(nh_), tp_0_(std::chrono::steady_clock::now()),
       mask_(mask_img_path.empty() ? cv::Mat{} : cv::imread(mask_img_path, cv::IMREAD_GRAYSCALE)),
-      pose_pub_(private_nh_.advertise<nav_msgs::Odometry>("camera_pose", 1)) {}
+      pose_pub_(private_nh_.advertise<nav_msgs::Odometry>("camera_pose", 1)),
+      map_to_odom_broadcaster_(),
+      tf_(),
+      tf_listener_(tf_){}
 
 void system::publish_pose(const Eigen::Matrix4d& cam_pose_wc) {
     // Extract rotation matrix and translation vector from
@@ -92,10 +96,10 @@ void system::publish_pose(const Eigen::Matrix4d& cam_pose_wc) {
     // Send map->odom transform. Set publish_tf to false if not using TF
     if (publish_tf) {
         try {
-            tf_.setUsingDedicatedThread (true);
+       //     tf_.setUsingDedicatedThread (true);
+         //   tf_.canTransform(camera_link_, odom_frame_,ros::Time(0), ros::Duration(0.0));
             auto camera_to_odom = tf_.lookupTransform(
-                camera_link_, odom_frame_, ros::Time::now(),
-                ros::Duration(0.0));
+                camera_link_, odom_frame_, ros::Time(0), ros::Duration(0.0));
             Eigen::Affine3d camera_to_odom_affine = tf2::transformToEigen(camera_to_odom.transform);
 
             auto map_to_odom_msg = tf2::eigenToTransform(map_to_camera_affine * camera_to_odom_affine);
@@ -107,6 +111,7 @@ void system::publish_pose(const Eigen::Matrix4d& cam_pose_wc) {
             map_to_odom_broadcaster_.sendTransform(map_to_odom_msg);
         }
         catch (tf2::TransformException& ex) {
+            ROS_ERROR( "Transform failed: %s", ex.what());
             //RCLCPP_ERROR(node_->get_logger(), "Transform failed: %s", ex.what());
         }
     }
