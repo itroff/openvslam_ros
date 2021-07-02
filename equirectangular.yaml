@@ -5,7 +5,7 @@
 #==============#
 
 Camera:
-  name: "realsense d435"
+  name: "realsense d455"
   setup: "stereo"
   model: "perspective"
 
