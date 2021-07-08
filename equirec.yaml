@@ -10,8 +10,8 @@ Camera:
   model: "equirectangular"
 
   fps: 30.0
-  cols: 3840
-  rows: 1920
+  cols: 1920
+  rows: 960
 
   color_order: "RGB"
 

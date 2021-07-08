@@ -11,11 +11,14 @@
 #include <message_filters/sync_policies/approximate_time.h>
 #include <cv_bridge/cv_bridge.h>
 #include <nav_msgs/Odometry.h>
+#include <nav_msgs/Path.h>
+#include <nav_msgs/OccupancyGrid.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/buffer_interface.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_eigen/tf2_eigen.h>
+#include <openvslam/data/keyframe.h>
 
 #include <opencv2/core/core.hpp>
 
@@ -33,10 +36,14 @@ public:
     cv::Mat mask_;
     std::vector<double> track_times_;
     ros::Publisher pose_pub_;
+    ros::Publisher graph_pub_;
+    ros::Publisher map_pub_;
     tf2_ros::TransformBroadcaster map_to_odom_broadcaster_;
      double transform_tolerance_;
     tf2_ros::Buffer tf_;
     tf2_ros::TransformListener tf_listener_;
+    std::chrono::time_point<std::chrono::steady_clock> time1_;
+    static bool comparePtrToKeyframe(openvslam::data::keyframe* a, openvslam::data::keyframe* b) { return (*a < *b); }
 };
 
 class mono : public system {

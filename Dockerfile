@@ -160,6 +160,6 @@ RUN set -x && \
 RUN set -x && \
   sh -c "echo '#'\!'/bin/bash\nset -e\nsource /opt/ros/${ROS_DISTRO}/setup.bash\n  export ROS_MASTER_URI=http://10.0.1.11:11311/\n export ROS_IP=10.0.1.11\n export ROS_HOSTNAME=10.0.1.11\nsource /openvslam/ros/1/devel/setup.bash\nexec \"\$@\"' > /ros_entrypoint.sh" && \
   chmod u+x /ros_entrypoint.sh
-
+WORKDIR /openvslam/ros/1/src/openvslam_ros/
 ENTRYPOINT ["/ros_entrypoint.sh"]
 CMD ["bash"]

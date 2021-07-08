@@ -5,17 +5,23 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <openvslam/publish/map_publisher.h>
+
 #include <Eigen/Geometry>
 #include <ros/console.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <math.h>
 
 namespace openvslam_ros {
 system::system(const std::shared_ptr<openvslam::config>& cfg, const std::string& vocab_file_path, const std::string& mask_img_path)
     : SLAM_(cfg, vocab_file_path), cfg_(cfg), private_nh_("~"), it_(nh_), tp_0_(std::chrono::steady_clock::now()),
       mask_(mask_img_path.empty() ? cv::Mat{} : cv::imread(mask_img_path, cv::IMREAD_GRAYSCALE)),
       pose_pub_(private_nh_.advertise<nav_msgs::Odometry>("camera_pose", 1)),
+      graph_pub_(private_nh_.advertise<nav_msgs::Path>("/map/graph", 1)),
+      map_pub_(private_nh_.advertise<nav_msgs::OccupancyGrid>("/map", 1)),
       map_to_odom_broadcaster_(),
       tf_(),
-      tf_listener_(tf_){}
+      tf_listener_(tf_)
+      {time1_ = std::chrono::steady_clock::now();}
 
 void system::publish_pose(const Eigen::Matrix4d& cam_pose_wc) {
     // Extract rotation matrix and translation vector from
@@ -105,7 +111,6 @@ void system::publish_pose(const Eigen::Matrix4d& cam_pose_wc) {
             auto map_to_odom_msg = tf2::eigenToTransform(map_to_camera_affine * camera_to_odom_affine);
           //  tf2::TimePoint transform_timestamp = tf2_ros::fromMsg(ros::Time::now()) + tf2::durationFromSec(transform_tolerance_);
             map_to_odom_msg.header.stamp = ros::Time::now();
-    pose_msg.header.frame_id = map_frame_;//tf2_ros::toMsg(transform_timestamp);
             map_to_odom_msg.header.frame_id = map_frame_;
             map_to_odom_msg.child_frame_id = odom_frame_;
             map_to_odom_broadcaster_.sendTransform(map_to_odom_msg);
@@ -137,6 +142,64 @@ void mono::callback(const sensor_msgs::ImageConstPtr& msg) {
     if (cam_pose_wc) {
         publish_pose(*cam_pose_wc);
     }
+
+    // publish occupancy grid map and path
+    double freq = 1.0;
+     std::chrono::duration<double, std::milli> diff = tp_2-time1_;
+    //const auto track_time2 = std::chrono::duration_cast<std::chrono::milliseconds>>(tp_2 - time1_).count();
+    
+    if(diff.count() < 1.0/ freq * 1000){
+       return;
+    }
+    time1_ = tp_2;
+    std::vector<openvslam::data::keyframe*> all_keyfrms;
+    unsigned int count = SLAM_.get_map_publisher()->get_keyframes(all_keyfrms);
+     ROS_INFO_THROTTLE(10, "Number keyframes: %d", count);
+     nav_msgs::Path path;
+     path.header.stamp = ros::Time::now();
+     path.header.frame_id = "map";
+     Eigen::Matrix3d cv_to_ros;
+     cv_to_ros << 0, 0, 1,
+        -1, 0, 0,
+        0, -1, 0;
+    double max_x = 0.0, max_y = 0.0 , min_x = 0.0, min_y = 0.0;
+    std::sort(all_keyfrms.begin(), all_keyfrms.end(),comparePtrToKeyframe);
+    for(auto iter : all_keyfrms){
+      //  ROS_INFO( "Keyframe id : %d", iter->id_);
+        geometry_msgs::PoseStamped pose;
+        pose.header = path.header;
+        Eigen::Vector3d vec = cv_to_ros* iter->get_cam_center();
+        pose.pose.position.x = vec(0);
+        if (vec(0) > max_x)  max_x = vec(0);
+        if (vec(0) < min_x)  min_x = vec(0);
+        pose.pose.position.y = vec(1);
+        if (vec(1) > max_y)  max_y = vec(1);
+        if (vec(1) < min_y)  min_y = vec(1);
+        pose.pose.position.z = vec(2);
+        path.poses.push_back(pose);
+    }
+    graph_pub_.publish(path);
+    ROS_INFO_THROTTLE(10, "max_x: %f , max_y: %f , min_x: %f , min_y: %f ", max_x, max_y, min_x, min_y );
+    nav_msgs::OccupancyGrid map;
+    map.header = path.header;
+    double resolution = 0.05;
+    map.info.resolution = resolution;
+    double center_x = abs(max_x - min_x);
+    double center_y = abs(max_y - min_y);
+    map.info.width = (center_x + ( 1.5 * 2)) / resolution;//( max_x + min_x) / 2.0 + ( 1.5 * 2);
+    map.info.height = (center_y+ ( 1.5 * 2)) / resolution;//(max_y + min_y) / 2.0 + (1.5 * 2) ;
+    map.info.origin.position.x =  (max_x - center_x /2.0) - map.info.width  / 2.0 * resolution;
+    map.info.origin.position.y =  (max_y - center_y / 2.0) - map.info.height / 2.0 * resolution;
+    map.info.origin.position.z = 0.0;
+    //TODO get quaternion
+    for(unsigned int i = 0; i < map.info.width; i++){
+        for(unsigned int j = 0; j < map.info.height; j++){
+            map.data.push_back(253);
+        }
+    }
+
+    map_pub_.publish(map);
+   
 }
 
 stereo::stereo(const std::shared_ptr<openvslam::config>& cfg, const std::string& vocab_file_path, const std::string& mask_img_path,
