@@ -164,8 +164,9 @@ void mono::callback(const sensor_msgs::ImageConstPtr& msg) {
         0, -1, 0;
     double max_x = 0.0, max_y = 0.0 , min_x = 0.0, min_y = 0.0;
     std::sort(all_keyfrms.begin(), all_keyfrms.end(),comparePtrToKeyframe);
-    for(auto iter : all_keyfrms){
-      //  ROS_INFO( "Keyframe id : %d", iter->id_);
+    for(const openvslam::data::keyframe* iter : all_keyfrms){
+     //   ROS_INFO( "Keyframe id : %d", (int)iter->id_);
+     //   ROS_INFO( "Keyframe id : %d", (int)iter->next_id_);
         geometry_msgs::PoseStamped pose;
         pose.header = path.header;
         Eigen::Vector3d vec = cv_to_ros* iter->get_cam_center();

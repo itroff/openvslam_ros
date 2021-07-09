@@ -152,9 +152,9 @@ RUN set -x && \
   bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash; \
   catkin_make -j${NUM_THREADS} \
     -DBUILD_WITH_MARCH_NATIVE=OFF \
-    -DUSE_PANGOLIN_VIEWER=ON \
+    -DUSE_PANGOLIN_VIEWER=OFF \
     -DUSE_SOCKET_PUBLISHER=OFF \
-    -DUSE_STACK_TRACE_LOGGER=ON \
+    -DUSE_STACK_TRACE_LOGGER=OFF \
     -DBOW_FRAMEWORK=DBoW2"
 
 RUN set -x && \
